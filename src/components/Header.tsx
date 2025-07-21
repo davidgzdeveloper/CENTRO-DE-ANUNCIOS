@@ -1,8 +1,9 @@
 
-import React from 'react';
+
+import React, { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Plus, User, LogOut, RefreshCw } from 'lucide-react';
+import { Bell, Plus, User, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAnuncios } from '@/hooks/useAnuncios';
 
@@ -12,16 +13,18 @@ interface HeaderProps {
 
 export const Header = ({ onNuevoAnuncio }: HeaderProps) => {
   const { usuario, logout } = useAuth();
-  const { obtenerEstadisticas, ultimaActualizacion, recargar } = useAnuncios();
-  const estadisticas = obtenerEstadisticas();
+  const { anuncios } = useAnuncios(); // Solo necesitamos la lista de anuncios
 
-  const formatearHora = (fecha: Date) => {
-    return fecha.toLocaleTimeString('es-ES', { 
-      hour: '2-digit', 
-      minute: '2-digit', 
-      second: '2-digit' 
-    });
-  };
+  // Calculamos las estadísticas directamente aquí
+  const estadisticas = useMemo(() => {
+    const tareas = anuncios.filter(a => a.tipo === 'tarea');
+    const pendientes = tareas.filter(a => a.estado === 'pendiente').length;
+    const enProceso = tareas.filter(a => a.estado === 'en_proceso').length;
+    const completados = tareas.filter(a => a.estado === 'completado').length;
+    const urgentes = tareas.filter(a => a.prioridad === 'alta' && a.estado !== 'completado').length;
+    
+    return { pendientes, enProceso, completados, urgentes, total: anuncios.length };
+  }, [anuncios]);
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">
@@ -43,20 +46,6 @@ export const Header = ({ onNuevoAnuncio }: HeaderProps) => {
         </div>
 
         <div className="flex items-center space-x-4">
-          <div className="text-sm text-gray-500">
-            Última actualización: {formatearHora(ultimaActualizacion)}
-          </div>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={recargar}
-            className="flex items-center space-x-1"
-          >
-            <RefreshCw className="h-4 w-4" />
-            <span>Actualizar</span>
-          </Button>
-
           {usuario && (usuario.rol === 'admin' || usuario.rol === 'empleado') && (
             <Button
               onClick={onNuevoAnuncio}
@@ -107,3 +96,4 @@ export const Header = ({ onNuevoAnuncio }: HeaderProps) => {
     </header>
   );
 };
+

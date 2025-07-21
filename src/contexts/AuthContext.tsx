@@ -13,10 +13,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Usuarios predefinidos para demo
 const USUARIOS_DEMO: (Usuario & { password: string })[] = [
-  { id: '1', nombre: 'Admin Sistema', rol: 'admin', password: 'admin123' },
-  { id: '2', nombre: 'Juan Pérez', rol: 'empleado', password: 'empleado123' },
-  { id: '3', nombre: 'Ana García', rol: 'empleado', password: 'empleado123' },
-  { id: '4', nombre: 'Monitor TV', rol: 'visualizador', password: 'monitor123' },
+  { id: '1', nombre: 'admin', rol: 'admin', password: 'admin123' },
+  { id: '2', nombre: 'playa', rol: 'empleado', password: 'playa123' },
+  { id: '3', nombre: 'tienda', rol: 'empleado', password: 'tienda123' },
+  { id: '4', nombre: 'deposito', rol: 'empleado', password: 'deposito123' },
+  { id: '5', nombre: 'mantenimiento', rol: 'empleado', password: 'mantenimiento123' },
 ];
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {

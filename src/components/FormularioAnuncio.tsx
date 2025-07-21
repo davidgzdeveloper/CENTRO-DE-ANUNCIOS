@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Anuncio } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -18,6 +19,8 @@ interface FormularioAnuncioProps {
   onActualizar?: (id: string, cambios: Partial<Anuncio>) => void;
 }
 
+const SECTORES_DISPONIBLES = ['Playa', 'Tienda', 'Depósito', 'Mantenimiento'];
+
 export const FormularioAnuncio = ({ 
   abierto, 
   onCerrar, 
@@ -26,34 +29,34 @@ export const FormularioAnuncio = ({
   onActualizar 
 }: FormularioAnuncioProps) => {
   const { usuario } = useAuth();
+  const [tipo, setTipo] = useState<Anuncio['tipo']>('tarea');
+  const [sectoresSeleccionados, setSectoresSeleccionados] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     titulo: '',
     descripcion: '',
-    sector: '' as Anuncio['sector'] | '',
     prioridad: '' as Anuncio['prioridad'] | '',
     estado: 'pendiente' as Anuncio['estado']
   });
   const [errores, setErrores] = useState<string[]>([]);
   const [guardando, setGuardando] = useState(false);
 
-  const sectores: Anuncio['sector'][] = ['Despacho', 'Tienda', 'Lavadero', 'Mantenimiento', 'Administración'];
-  const prioridades: Anuncio['prioridad'][] = ['alta', 'media', 'baja'];
-  const estados: Anuncio['estado'][] = ['pendiente', 'en_proceso', 'completado'];
-
   useEffect(() => {
     if (anuncioEditar) {
+      setTipo(anuncioEditar.tipo);
+      setSectoresSeleccionados(anuncioEditar.sectores);
       setFormData({
         titulo: anuncioEditar.titulo,
         descripcion: anuncioEditar.descripcion,
-        sector: anuncioEditar.sector,
         prioridad: anuncioEditar.prioridad,
         estado: anuncioEditar.estado
       });
     } else {
+      // Reset a valores por defecto para un nuevo formulario
+      setTipo('tarea');
+      setSectoresSeleccionados([]);
       setFormData({
         titulo: '',
         descripcion: '',
-        sector: '',
         prioridad: '',
         estado: 'pendiente'
       });
@@ -63,62 +66,42 @@ export const FormularioAnuncio = ({
 
   const validarFormulario = (): boolean => {
     const nuevosErrores: string[] = [];
-
-    if (!formData.titulo.trim()) {
-      nuevosErrores.push('El título es obligatorio');
-    } else if (formData.titulo.trim().length < 5) {
+    if (!formData.titulo.trim() || formData.titulo.trim().length < 5) {
       nuevosErrores.push('El título debe tener al menos 5 caracteres');
     }
-
-    if (!formData.descripcion.trim()) {
-      nuevosErrores.push('La descripción es obligatoria');
-    } else if (formData.descripcion.trim().length < 10) {
+    if (!formData.descripcion.trim() || formData.descripcion.trim().length < 10) {
       nuevosErrores.push('La descripción debe tener al menos 10 caracteres');
     }
-
-    if (!formData.sector) {
-      nuevosErrores.push('Debe seleccionar un sector');
+    if (sectoresSeleccionados.length === 0) {
+      nuevosErrores.push('Debe seleccionar al menos un sector');
     }
-
-    if (!formData.prioridad) {
-      nuevosErrores.push('Debe seleccionar una prioridad');
+    if (tipo === 'tarea' && !formData.prioridad) {
+      nuevosErrores.push('Debe seleccionar una prioridad para la tarea');
     }
-
     setErrores(nuevosErrores);
     return nuevosErrores.length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validarFormulario()) {
-      return;
-    }
+    if (!validarFormulario()) return;
 
     setGuardando(true);
+    const datosAnuncio = {
+      ...formData,
+      titulo: formData.titulo.trim(),
+      descripcion: formData.descripcion.trim(),
+      tipo,
+      sectores: sectoresSeleccionados,
+      creadoPor: usuario?.nombre || 'Usuario Desconocido',
+    };
 
     try {
       if (anuncioEditar && onActualizar) {
-        // Actualizar anuncio existente
-        onActualizar(anuncioEditar.id, {
-          titulo: formData.titulo.trim(),
-          descripcion: formData.descripcion.trim(),
-          sector: formData.sector as Anuncio['sector'],
-          prioridad: formData.prioridad as Anuncio['prioridad'],
-          estado: formData.estado
-        });
+        onActualizar(anuncioEditar.id, datosAnuncio);
       } else {
-        // Crear nuevo anuncio
-        onGuardar({
-          titulo: formData.titulo.trim(),
-          descripcion: formData.descripcion.trim(),
-          sector: formData.sector as Anuncio['sector'],
-          prioridad: formData.prioridad as Anuncio['prioridad'],
-          estado: formData.estado,
-          creadoPor: usuario?.nombre || 'Usuario Desconocido'
-        });
+        onGuardar(datosAnuncio);
       }
-      
       onCerrar();
     } catch (error) {
       console.error('Error al guardar anuncio:', error);
@@ -128,12 +111,17 @@ export const FormularioAnuncio = ({
     }
   };
 
+  const handleSectorChange = (sector: string) => {
+    setSectoresSeleccionados(prev => 
+      prev.includes(sector) 
+        ? prev.filter(s => s !== sector) 
+        : [...prev, sector]
+    );
+  };
+
   const handleInputChange = (campo: keyof typeof formData, valor: string) => {
     setFormData(prev => ({ ...prev, [campo]: valor }));
-    // Limpiar errores cuando el usuario empiece a escribir
-    if (errores.length > 0) {
-      setErrores([]);
-    }
+    if (errores.length > 0) setErrores([]);
   };
 
   return (
@@ -158,141 +146,86 @@ export const FormularioAnuncio = ({
             </Alert>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="md:col-span-2">
-              <Label htmlFor="titulo" className="text-sm font-medium">
-                Título del Anuncio *
-              </Label>
-              <Input
-                id="titulo"
-                value={formData.titulo}
-                onChange={(e) => handleInputChange('titulo', e.target.value)}
-                placeholder="Ingrese el título del anuncio"
-                disabled={guardando}
-                maxLength={100}
-              />
-              <div className="text-xs text-gray-500 mt-1">
-                {formData.titulo.length}/100 caracteres
-              </div>
-            </div>
-
+          {usuario?.rol === 'admin' && (
             <div>
-              <Label htmlFor="sector" className="text-sm font-medium">
-                Sector *
-              </Label>
-              <Select
-                value={formData.sector}
-                onValueChange={(value) => handleInputChange('sector', value)}
-                disabled={guardando}
+              <Label className="text-sm font-medium">Tipo de Anuncio *</Label>
+              <RadioGroup
+                value={tipo}
+                onValueChange={(value) => setTipo(value as Anuncio['tipo'])}
+                className="flex items-center space-x-4 mt-2"
+                disabled={guardando || !!anuncioEditar}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione un sector" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sectores.map((sector) => (
-                    <SelectItem key={sector} value={sector}>
-                      {sector}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="tarea" id="tipo-tarea" />
+                  <Label htmlFor="tipo-tarea">Tarea</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="pizarra" id="tipo-pizarra" />
+                  <Label htmlFor="tipo-pizarra">Pizarra</Label>
+                </div>
+              </RadioGroup>
             </div>
+          )}
 
-            <div>
-              <Label htmlFor="prioridad" className="text-sm font-medium">
-                Prioridad *
-              </Label>
-              <Select
-                value={formData.prioridad}
-                onValueChange={(value) => handleInputChange('prioridad', value)}
-                disabled={guardando}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccione la prioridad" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="alta">
-                    <span className="flex items-center">
-                      <span className="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                      Alta
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="media">
-                    <span className="flex items-center">
-                      <span className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></span>
-                      Media
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="baja">
-                    <span className="flex items-center">
-                      <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-                      Baja
-                    </span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {anuncioEditar && (
-              <div className="md:col-span-2">
-                <Label htmlFor="estado" className="text-sm font-medium">
-                  Estado
-                </Label>
-                <Select
-                  value={formData.estado}
-                  onValueChange={(value) => handleInputChange('estado', value as Anuncio['estado'])}
-                  disabled={guardando}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {estados.map((estado) => (
-                      <SelectItem key={estado} value={estado}>
-                        {estado === 'pendiente' ? 'Pendiente' :
-                         estado === 'en_proceso' ? 'En Proceso' :
-                         'Completado'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+          <div>
+            <Label htmlFor="titulo" className="text-sm font-medium">Título *</Label>
+            <Input id="titulo" value={formData.titulo} onChange={(e) => handleInputChange('titulo', e.target.value)} placeholder="Ingrese el título" disabled={guardando} maxLength={100} />
           </div>
 
           <div>
-            <Label htmlFor="descripcion" className="text-sm font-medium">
-              Descripción *
-            </Label>
-            <Textarea
-              id="descripcion"
-              value={formData.descripcion}
-              onChange={(e) => handleInputChange('descripcion', e.target.value)}
-              placeholder="Describa detalladamente el anuncio, incluya toda la información relevante..."
-              rows={6}
-              disabled={guardando}
-              maxLength={1000}
-            />
-            <div className="text-xs text-gray-500 mt-1">
-              {formData.descripcion.length}/1000 caracteres
+            <Label className="text-sm font-medium">Sectores *</Label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-2">
+              {SECTORES_DISPONIBLES.map(sector => (
+                <div key={sector} className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`sector-${sector}`}
+                    checked={sectoresSeleccionados.includes(sector)}
+                    onCheckedChange={() => handleSectorChange(sector)}
+                    disabled={guardando}
+                  />
+                  <Label htmlFor={`sector-${sector}`} className="font-normal">{sector}</Label>
+                </div>
+              ))}
             </div>
           </div>
 
+          {tipo === 'tarea' && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="prioridad" className="text-sm font-medium">Prioridad *</Label>
+                <Select value={formData.prioridad} onValueChange={(value) => handleInputChange('prioridad', value)} disabled={guardando}>
+                  <SelectTrigger><SelectValue placeholder="Seleccione la prioridad" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="alta">Alta</SelectItem>
+                    <SelectItem value="media">Media</SelectItem>
+                    <SelectItem value="baja">Baja</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              {anuncioEditar && (
+                <div>
+                  <Label htmlFor="estado" className="text-sm font-medium">Estado</Label>
+                  <Select value={formData.estado} onValueChange={(value) => handleInputChange('estado', value as Anuncio['estado'])} disabled={guardando}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pendiente">Pendiente</SelectItem>
+                      <SelectItem value="en_proceso">En Proceso</SelectItem>
+                      <SelectItem value="completado">Completado</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div>
+            <Label htmlFor="descripcion" className="text-sm font-medium">Descripción *</Label>
+            <Textarea id="descripcion" value={formData.descripcion} onChange={(e) => handleInputChange('descripcion', e.target.value)} placeholder="Describa detalladamente..." rows={6} disabled={guardando} maxLength={1000} />
+          </div>
+
           <DialogFooter className="flex flex-col sm:flex-row gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCerrar}
-              disabled={guardando}
-              className="w-full sm:w-auto"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              disabled={guardando}
-              className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
-            >
+            <Button type="button" variant="outline" onClick={onCerrar} disabled={guardando}>Cancelar</Button>
+            <Button type="submit" disabled={guardando} className="bg-blue-600 hover:bg-blue-700">
               {guardando ? 'Guardando...' : anuncioEditar ? 'Actualizar' : 'Crear Anuncio'}
             </Button>
           </DialogFooter>

@@ -42,7 +42,7 @@ export const LoginForm = () => {
             Monitor de Anuncios
           </CardTitle>
           <CardDescription className="text-gray-600">
-            Sistema de Comunicación Interna - Estación de Servicios
+            Sistema de Comunicación Interna - Estación de Servicio Bracia SA
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -86,15 +86,6 @@ export const LoginForm = () => {
               {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </Button>
           </form>
-
-          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-            <h3 className="font-semibold text-sm text-gray-700 mb-2">Usuarios de Prueba:</h3>
-            <div className="text-xs text-gray-600 space-y-1">
-              <div><strong>Admin:</strong> Admin Sistema / admin123</div>
-              <div><strong>Empleado:</strong> Juan Pérez / empleado123</div>
-              <div><strong>Monitor:</strong> Monitor TV / monitor123</div>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

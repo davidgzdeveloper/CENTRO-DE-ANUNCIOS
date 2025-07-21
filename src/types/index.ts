@@ -14,9 +14,10 @@ export interface Comentario {
 
 export interface Anuncio {
   id: string;
+  tipo: 'tarea' | 'pizarra'; // Nuevo campo para diferenciar
   titulo: string;
   descripcion: string;
-  sector: 'Despacho' | 'Tienda' | 'Lavadero' | 'Mantenimiento' | 'Administración';
+  sectores: string[]; // Cambiado a un array de strings
   prioridad: 'alta' | 'media' | 'baja';
   estado: 'pendiente' | 'en_proceso' | 'completado';
   fechaCreacion: Date;

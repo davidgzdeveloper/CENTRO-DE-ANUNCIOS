@@ -25,12 +25,14 @@ export const LoginForm = () => {
       return;
     }
 
-    const loginExitoso = login(nombre.trim(), password);
-    
-    if (!loginExitoso) {
-      setError('Credenciales incorrectas');
+    try {
+      const loginExitoso = await login(nombre.trim(), password);
+      if (!loginExitoso) {
+        setError('Credenciales incorrectas');
+      }
+    } catch (err) {
+      setError('Error al intentar iniciar sesión');
     }
-    
     setIsLoading(false);
   };
 

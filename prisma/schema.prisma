@@ -1,0 +1,68 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id          String      @id @default(cuid())
+  nombre      String      @unique
+  password    String
+  rol         Rol
+  anuncios    Anuncio[]   @relation("CreadoPor")
+  comentarios Comentario[] @relation("Autor")
+}
+
+model Anuncio {
+  id                String       @id @default(cuid())
+  tipo              TipoAnuncio
+  titulo            String
+  descripcion       String
+  sectores          String[]
+  prioridad         Prioridad
+  estado            Estado
+  fechaCreacion     DateTime     @default(now())
+  fechaModificacion DateTime     @updatedAt
+  creadoPor         Usuario      @relation("CreadoPor", fields: [creadoPorId], references: [id])
+  creadoPorId       String
+  comentarios       Comentario[]
+}
+
+model Comentario {
+  id        String   @id @default(cuid())
+  texto     String
+  autor     Usuario  @relation("Autor", fields: [autorId], references: [id])
+  autorId   String
+  fecha     DateTime @default(now())
+  anuncio   Anuncio  @relation(fields: [anuncioId], references: [id])
+  anuncioId String
+}
+
+enum Rol {
+  admin
+  empleado
+  visualizador
+}
+
+enum TipoAnuncio {
+  tarea
+  pizarra
+}
+
+enum Prioridad {
+  alta
+  media
+  baja
+}
+
+enum Estado {
+  pendiente
+  en_proceso
+  completado
+}

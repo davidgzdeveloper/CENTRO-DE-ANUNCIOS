@@ -4,21 +4,14 @@ import { Usuario } from '@/types';
 
 interface AuthContextType {
   usuario: Usuario | null;
-  login: (nombre: string, password: string) => boolean;
+  login: (nombre: string, password: string) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Usuarios predefinidos para demo
-const USUARIOS_DEMO: (Usuario & { password: string })[] = [
-  { id: '1', nombre: 'admin', rol: 'admin', password: 'admin123' },
-  { id: '2', nombre: 'playa', rol: 'empleado', password: 'playa123' },
-  { id: '3', nombre: 'tienda', rol: 'empleado', password: 'tienda123' },
-  { id: '4', nombre: 'deposito', rol: 'empleado', password: 'deposito123' },
-  { id: '5', nombre: 'mantenimiento', rol: 'empleado', password: 'mantenimiento123' },
-];
+// ...eliminado USUARIOS_DEMO...
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [usuario, setUsuario] = useState<Usuario | null>(null);
@@ -38,23 +31,53 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   }, []);
 
-  const login = (nombre: string, password: string): boolean => {
-    const usuarioEncontrado = USUARIOS_DEMO.find(
-      u => u.nombre.toLowerCase() === nombre.toLowerCase() && u.password === password
-    );
+  const login = async (nombre: string, password: string): Promise<boolean> => {
+    try {
+      console.log('🔄 Iniciando login desde frontend...');
+      console.log('🌐 URL del servidor:', `${import.meta.env.VITE_API_URL}/api/auth/login`);
+      
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ nombre, password }),
+      });
 
-    if (usuarioEncontrado) {
-      const { password: _, ...usuarioSinPassword } = usuarioEncontrado;
-      setUsuario(usuarioSinPassword);
-      localStorage.setItem('usuario_actual', JSON.stringify(usuarioSinPassword));
-      return true;
+      console.log('📡 Respuesta recibida:', response.status, response.statusText);
+      console.log('📡 Headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        console.error('❌ Error HTTP:', response.status, response.statusText);
+        return false;
+      }
+
+      const data = await response.json();
+      console.log('📊 Datos de respuesta:', data);
+
+      if (data.success && data.usuario) {
+        setUsuario(data.usuario);
+        localStorage.setItem('usuario_actual', JSON.stringify(data.usuario));
+        if (data.token) {
+          localStorage.setItem('auth_token', data.token);
+        }
+        console.log('✅ Login exitoso');
+        return true;
+      }
+      
+      console.log('❌ Login fallido - datos inválidos');
+      return false;
+    } catch (error) {
+      console.error('❌ Error en login:', error);
+      console.error('❌ Tipo de error:', error instanceof TypeError ? 'TypeError' : typeof error);
+      return false;
     }
-    return false;
   };
 
   const logout = () => {
     setUsuario(null);
     localStorage.removeItem('usuario_actual');
+    localStorage.removeItem('auth_token');
   };
 
   return (

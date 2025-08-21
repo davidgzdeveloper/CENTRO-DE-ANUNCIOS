@@ -2,126 +2,169 @@ import { useState, useEffect, useCallback } from 'react';
 import { Anuncio, FiltrosAnuncio } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 
-const STORAGE_KEY = 'anuncios_sistema_v2'; // Nueva key para evitar conflictos con datos viejos
-
-// Datos de ejemplo actualizados
-const ANUNCIOS_DEMO: Anuncio[] = [
-  // Tareas
-  { id: '1', tipo: 'tarea', titulo: 'Mantenimiento Bomba 3', descripcion: 'Fuga menor en manguera. Revisión inmediata.', sectores: ['Mantenimiento', 'Playa'], prioridad: 'alta', estado: 'pendiente', fechaCreacion: new Date('2024-07-20T08:30:00'), fechaModificacion: new Date(), creadoPor: 'admin', comentarios: [] },
-  { id: '2', tipo: 'tarea', titulo: 'Promoción Fin de Semana', descripcion: 'Activar 10% de descuento en lavado premium.', sectores: ['Tienda'], prioridad: 'media', estado: 'en_proceso', fechaCreacion: new Date('2024-07-20T09:15:00'), fechaModificacion: new Date(), creadoPor: 'tienda', comentarios: [] },
-  { id: '3', tipo: 'tarea', titulo: 'Restock Aceites', descripcion: 'Nivel bajo de 10W40 y 5W30. Reposición urgente.', sectores: ['Depósito', 'Tienda'], prioridad: 'alta', estado: 'completado', fechaCreacion: new Date('2024-07-19T14:00:00'), fechaModificacion: new Date(), creadoPor: 'deposito', comentarios: [] },
-  
-  // Pizarra
-  { id: '4', tipo: 'pizarra', titulo: 'NUEVO HORARIO DE VERANO', descripcion: 'A partir del 1 de Agosto, el horario de atención será de 7:00 a 22:00 hs.', sectores: ['Playa', 'Tienda', 'Depósito', 'Mantenimiento'], prioridad: 'baja', estado: 'pendiente', fechaCreacion: new Date('2024-07-18T10:00:00'), fechaModificacion: new Date(), creadoPor: 'admin', comentarios: [] },
-  { id: '5', tipo: 'pizarra', titulo: 'Protocolo de Seguridad', descripcion: 'Recordatorio: El uso de calzado de seguridad es obligatorio en el área de Depósito y Mantenimiento.', sectores: ['Depósito', 'Mantenimiento'], prioridad: 'media', estado: 'pendiente', fechaCreacion: new Date('2024-07-17T11:00:00'), fechaModificacion: new Date(), creadoPor: 'admin', comentarios: [] },
-];
-
 export const useAnuncios = () => {
   const { usuario } = useAuth();
   const [anuncios, setAnuncios] = useState<Anuncio[]>([]);
 
-  const guardarAnuncios = useCallback((nuevosAnuncios: Anuncio[]) => {
+  // Obtener todos los anuncios desde la API
+  const fetchAnuncios = useCallback(async () => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(nuevosAnuncios));
-      setAnuncios(nuevosAnuncios);
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/anuncios`, {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const anunciosData = await response.json();
+        const anunciosConFechas = anunciosData.map((anuncio: any) => ({
+          ...anuncio,
+          fechaCreacion: new Date(anuncio.fechaCreacion),
+          fechaModificacion: new Date(anuncio.fechaModificacion),
+          comentarios: anuncio.comentarios.map((comentario: any) => ({
+            ...comentario,
+            fecha: new Date(comentario.fecha)
+          }))
+        }));
+        setAnuncios(anunciosConFechas);
+      } else {
+        console.error('Error al obtener anuncios:', response.status);
+        setAnuncios([]);
+      }
     } catch (error) {
-      console.error('Error al guardar anuncios:', error);
+      console.error('Error al obtener anuncios:', error);
+      setAnuncios([]);
     }
   }, []);
 
   useEffect(() => {
+    fetchAnuncios();
+  }, [fetchAnuncios]);
+
+  // Crear anuncio usando la API
+  const crearAnuncio = useCallback(async (nuevoAnuncioData: Omit<Anuncio, 'id' | 'fechaCreacion' | 'fechaModificacion' | 'comentarios'>) => {
     try {
-      const anunciosGuardados = localStorage.getItem(STORAGE_KEY);
-      if (anunciosGuardados) {
-        const parsed = JSON.parse(anunciosGuardados);
-        const anunciosConFechas = parsed.map((anuncio: any) => ({
-          ...anuncio,
-          fechaCreacion: new Date(anuncio.fechaCreacion),
-          fechaModificacion: new Date(anuncio.fechaModificacion),
-          comentarios: anuncio.comentarios.map((c: any) => ({ ...c, fecha: new Date(c.fecha) }))
-        }));
-        setAnuncios(anunciosConFechas);
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/anuncios`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(nuevoAnuncioData)
+      });
+
+      if (response.ok) {
+        await fetchAnuncios();
       } else {
-        setAnuncios(ANUNCIOS_DEMO);
-        guardarAnuncios(ANUNCIOS_DEMO);
+        console.error('Error al crear anuncio:', response.status);
       }
     } catch (error) {
-      console.error('Error al cargar anuncios:', error);
-      setAnuncios(ANUNCIOS_DEMO);
+      console.error('Error al crear anuncio:', error);
     }
-  }, [guardarAnuncios]);
+  }, [fetchAnuncios]);
 
-  const crearAnuncio = useCallback((nuevoAnuncioData: Omit<Anuncio, 'id' | 'fechaCreacion' | 'fechaModificacion' | 'comentarios'>) => {
-    const anuncioCompleto: Anuncio = {
-      ...nuevoAnuncioData,
-      id: Date.now().toString(),
-      fechaCreacion: new Date(),
-      fechaModificacion: new Date(),
-      comentarios: [],
-      // Asegurarse que los campos por defecto de 'tarea' estén correctos
-      estado: nuevoAnuncioData.tipo === 'pizarra' ? 'pendiente' : nuevoAnuncioData.estado,
-      prioridad: nuevoAnuncioData.tipo === 'pizarra' ? 'baja' : nuevoAnuncioData.prioridad,
-    };
-    guardarAnuncios([anuncioCompleto, ...anuncios]);
-  }, [anuncios, guardarAnuncios]);
+  // Actualizar anuncio usando la API
+  const actualizarAnuncio = useCallback(async (id: string, cambios: Partial<Anuncio>) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/anuncios/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(cambios)
+      });
 
-  const actualizarAnuncio = useCallback((id: string, cambios: Partial<Anuncio>) => {
-    const nuevosAnuncios = anuncios.map(anuncio => 
-      anuncio.id === id 
-        ? { ...anuncio, ...cambios, fechaModificacion: new Date() }
-        : anuncio
-    );
-    guardarAnuncios(nuevosAnuncios);
-  }, [anuncios, guardarAnuncios]);
+      if (response.ok) {
+        await fetchAnuncios();
+      } else {
+        console.error('Error al actualizar anuncio:', response.status);
+      }
+    } catch (error) {
+      console.error('Error al actualizar anuncio:', error);
+    }
+  }, [fetchAnuncios]);
 
-  const cambiarEstado = useCallback((id: string, nuevoEstado: Anuncio['estado']) => {
-    actualizarAnuncio(id, { estado: nuevoEstado });
+  // Cambiar estado de anuncio
+  const cambiarEstado = useCallback(async (id: string, nuevoEstado: Anuncio['estado']) => {
+    await actualizarAnuncio(id, { estado: nuevoEstado });
   }, [actualizarAnuncio]);
 
-  const agregarComentario = useCallback((idAnuncio: string, texto: string, autor: string) => {
-    const anuncio = anuncios.find(a => a.id === idAnuncio);
-    if (anuncio) {
-      const nuevoComentario = { id: Date.now().toString(), texto, autor, fecha: new Date() };
-      actualizarAnuncio(idAnuncio, { comentarios: [...anuncio.comentarios, nuevoComentario] });
+  // Agregar comentario usando la API
+  const agregarComentario = useCallback(async (idAnuncio: string, texto: string, autor: string) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/anuncios/${idAnuncio}/comentarios`, {
+        method: 'POST',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ texto, autor })
+      });
+
+      if (response.ok) {
+        await fetchAnuncios();
+      } else {
+        console.error('Error al agregar comentario:', response.status);
+      }
+    } catch (error) {
+      console.error('Error al agregar comentario:', error);
     }
-  }, [anuncios, actualizarAnuncio]);
+  }, [fetchAnuncios]);
 
-  const eliminarAnuncio = useCallback((id: string) => {
-    guardarAnuncios(anuncios.filter(anuncio => anuncio.id !== id));
-  }, [anuncios, guardarAnuncios]);
+  // Eliminar anuncio usando la API
+  const eliminarAnuncio = useCallback(async (id: string) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/anuncios/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'Content-Type': 'application/json'
+        }
+      });
 
+      if (response.ok) {
+        await fetchAnuncios();
+      } else {
+        console.error('Error al eliminar anuncio:', response.status);
+      }
+    } catch (error) {
+      console.error('Error al eliminar anuncio:', error);
+    }
+  }, [fetchAnuncios]);
+
+  // Filtrar anuncios (en memoria, después de obtenerlos de la BD)
   const filtrarAnuncios = useCallback((filtros: FiltrosAnuncio) => {
     if (!usuario) return [];
 
-    // Lógica corregida para determinar los sectores visibles por el usuario
     let sectoresVisiblesPorUsuario: string[];
     if (usuario.rol === 'admin') {
       sectoresVisiblesPorUsuario = ['Playa', 'Tienda', 'Depósito', 'Mantenimiento'];
     } else {
-      // Capitaliza el nombre del usuario para que coincida con el formato del sector (ej: 'playa' -> 'Playa')
       const sectorDelUsuario = usuario.nombre.charAt(0).toUpperCase() + usuario.nombre.slice(1);
       sectoresVisiblesPorUsuario = [sectorDelUsuario];
     }
 
     return anuncios.filter(anuncio => {
-      // 1. Filtro por visibilidad del usuario (sector)
       const esVisibleParaUsuario = anuncio.sectores.some(s => sectoresVisiblesPorUsuario.includes(s));
       if (!esVisibleParaUsuario) return false;
 
-      // 2. Filtros de la UI
       const cumpleSectorFiltro = filtros.sector === 'todos' || anuncio.sectores.includes(filtros.sector);
       const cumpleBusqueda = filtros.textoBusqueda === '' || 
         anuncio.titulo.toLowerCase().includes(filtros.textoBusqueda.toLowerCase()) ||
         anuncio.descripcion.toLowerCase().includes(filtros.textoBusqueda.toLowerCase());
 
-      // 3. Filtros específicos para TAREAS
       if (anuncio.tipo === 'tarea') {
         const cumpleEstado = filtros.estado === 'todos' || anuncio.estado === filtros.estado;
         const cumplePrioridad = filtros.prioridad === 'todas' || anuncio.prioridad === filtros.prioridad;
         return cumpleSectorFiltro && cumpleBusqueda && cumpleEstado && cumplePrioridad;
       }
-
-      // Para Pizarra, solo aplican los filtros generales
       return cumpleSectorFiltro && cumpleBusqueda;
     });
   }, [anuncios, usuario]);

@@ -13,18 +13,26 @@ interface HeaderProps {
 
 export const Header = ({ onNuevoAnuncio }: HeaderProps) => {
   const { usuario, logout } = useAuth();
-  const { anuncios } = useAnuncios(); // Solo necesitamos la lista de anuncios
+  const { filtrarAnuncios } = useAnuncios();
 
-  // Calculamos las estadísticas directamente aquí
+  // Calculamos las estadísticas usando los anuncios filtrados por rol del usuario
   const estadisticas = useMemo(() => {
-    const tareas = anuncios.filter(a => a.tipo === 'tarea');
+    // Usamos filtros vacíos para obtener todos los anuncios visibles para el usuario
+    const anunciosVisibles = filtrarAnuncios({ 
+      estado: 'todos', 
+      sector: 'todos', 
+      prioridad: 'todas', 
+      textoBusqueda: '' 
+    });
+    
+    const tareas = anunciosVisibles.filter(a => a.tipo === 'tarea');
     const pendientes = tareas.filter(a => a.estado === 'pendiente').length;
     const enProceso = tareas.filter(a => a.estado === 'en_proceso').length;
     const completados = tareas.filter(a => a.estado === 'completado').length;
     const urgentes = tareas.filter(a => a.prioridad === 'alta' && a.estado !== 'completado').length;
     
-    return { pendientes, enProceso, completados, urgentes, total: anuncios.length };
-  }, [anuncios]);
+    return { pendientes, enProceso, completados, urgentes, total: anunciosVisibles.length };
+  }, [filtrarAnuncios]);
 
   return (
     <header className="bg-white border-b border-gray-200 px-6 py-4">

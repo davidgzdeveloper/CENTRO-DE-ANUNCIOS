@@ -60,9 +60,36 @@ export const createAnuncio = async (req: Request, res: Response) => {
     
     const { tipo, titulo, descripcion, sectores, prioridad, estado, creadoPor } = req.body;
 
-    if (!tipo || !titulo || !descripcion || !sectores || !prioridad || !estado || !creadoPor) {
-      return res.status(400).json({ error: 'Faltan campos requeridos' });
+    // Validación más específica con logging
+    const camposFaltantes = [];
+    if (!tipo) camposFaltantes.push('tipo');
+    if (!titulo) camposFaltantes.push('titulo');
+    if (!descripcion) camposFaltantes.push('descripcion');
+    if (!sectores) camposFaltantes.push('sectores');
+    if (!estado) camposFaltantes.push('estado');
+    if (!creadoPor) camposFaltantes.push('creadoPor');
+    
+    // La prioridad es requerida solo para tareas
+    if (tipo === 'tarea' && !prioridad) {
+      camposFaltantes.push('prioridad');
     }
+
+    if (camposFaltantes.length > 0) {
+      console.log('❌ Campos faltantes:', camposFaltantes);
+      return res.status(400).json({ error: `Faltan campos requeridos: ${camposFaltantes.join(', ')}` });
+    }
+
+    // Buscar al usuario por nombre para obtener su ID
+    console.log('🔍 Buscando usuario:', creadoPor);
+    const usuario = await prisma.usuario.findUnique({
+      where: { nombre: creadoPor }
+    });
+
+    if (!usuario) {
+      console.log('❌ Usuario no encontrado:', creadoPor);
+      return res.status(400).json({ error: 'Usuario no encontrado' });
+    }
+    console.log('✅ Usuario encontrado:', usuario.nombre, 'ID:', usuario.id);
 
     const nuevoAnuncio = await prisma.anuncio.create({
       data: {
@@ -70,9 +97,9 @@ export const createAnuncio = async (req: Request, res: Response) => {
         titulo,
         descripcion,
         sectores,
-        prioridad,
+        prioridad: tipo === 'tarea' ? prioridad : 'media', // Para pizarras usamos prioridad media por defecto
         estado,
-        creadoPor: { connect: { nombre: creadoPor } }
+        creadoPorId: usuario.id
       },
       include: {
         creadoPor: {
@@ -99,7 +126,11 @@ export const createAnuncio = async (req: Request, res: Response) => {
 
   } catch (error) {
     console.error('❌ Error creando anuncio:', error);
-    res.status(500).json({ error: 'Error interno del servidor' });
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+    res.status(500).json({ error: 'Error interno del servidor', details: error instanceof Error ? error.message : 'Error desconocido' });
   }
 };
 
@@ -185,11 +216,20 @@ export const addComentario = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Texto y autor son requeridos' });
     }
 
+    // Buscar al usuario por nombre para obtener su ID
+    const usuario = await prisma.usuario.findUnique({
+      where: { nombre: autor }
+    });
+
+    if (!usuario) {
+      return res.status(400).json({ error: 'Usuario no encontrado' });
+    }
+
     const comentario = await prisma.comentario.create({
       data: {
         texto,
-        autor: { connect: { nombre: autor } },
-        anuncio: { connect: { id } }
+        autorId: usuario.id,
+        anuncioId: id
       },
       include: {
         autor: {

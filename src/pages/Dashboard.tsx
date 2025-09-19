@@ -6,7 +6,10 @@ import { FormularioAnuncio } from '@/components/FormularioAnuncio';
 import { DetalleAnuncio } from '@/components/DetalleAnuncio';
 import { ComentarioModal } from '@/components/ComentarioModal';
 import { ConfirmacionModal } from '@/components/ConfirmacionModal';
+import { CartelCotizacion } from '@/components/CartelCotizacion';
+import { ModalCotizaciones } from '@/components/ModalCotizaciones';
 import { useAnuncios } from '@/hooks/useAnuncios';
+import { useCotizaciones } from '@/hooks/useCotizaciones';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Anuncio, FiltrosAnuncio } from '@/types';
@@ -17,11 +20,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 export const Dashboard = () => {
   const { usuario } = useAuth();
   const { anuncios, crearAnuncio, actualizarAnuncio, cambiarEstado, agregarComentario, eliminarAnuncio, filtrarAnuncios } = useAnuncios();
+  const { cotizacion, loading: loadingCotizaciones, actualizarCotizaciones } = useCotizaciones();
 
   const [modalFormulario, setModalFormulario] = useState(false);
   const [modalDetalle, setModalDetalle] = useState(false);
   const [modalComentario, setModalComentario] = useState(false);
   const [modalConfirmacion, setModalConfirmacion] = useState(false);
+  const [modalCotizaciones, setModalCotizaciones] = useState(false);
   const [anuncioSeleccionado, setAnuncioSeleccionado] = useState<Anuncio | null>(null);
   const [anuncioEditar, setAnuncioEditar] = useState<Anuncio | null>(null);
   const [anuncioEliminar, setAnuncioEliminar] = useState<string | null>(null);
@@ -29,7 +34,6 @@ export const Dashboard = () => {
   const [filtros, setFiltros] = useState<FiltrosAnuncio>({ estado: 'todos', sector: 'todos', prioridad: 'todas', textoBusqueda: '' });
   const [mostrarFiltros, setMostrarFiltros] = useState(true);
   const [vistaPrincipal, setVistaPrincipal] = useState('tareas');
-  const [vistaTareas, setVistaTareas] = useState('pendientes');
 
   const datosFiltrados = useMemo(() => {
     const anunciosVisibles = filtrarAnuncios(filtros).sort((a, b) => b.fechaCreacion.getTime() - a.fechaCreacion.getTime());
@@ -80,6 +84,26 @@ export const Dashboard = () => {
   };
   const handleLimpiarFiltros = () => setFiltros({ estado: 'todos', sector: 'todos', prioridad: 'todas', textoBusqueda: '' });
 
+  // Handlers para cotizaciones
+  const handleEditarCotizaciones = () => setModalCotizaciones(true);
+  const handleGuardarCotizaciones = async (nuevasCotizaciones: { dolar: number; dolarViejo: number; real: number }) => {
+    if (!usuario) return;
+    try {
+      await actualizarCotizaciones(nuevasCotizaciones, usuario.nombre);
+      toast({
+        title: "Cotizaciones actualizadas",
+        description: "Las cotizaciones se han actualizado exitosamente."
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudieron actualizar las cotizaciones.",
+        variant: "destructive"
+      });
+      throw error;
+    }
+  };
+
   const renderGridAnuncios = (listaAnuncios: Anuncio[], mensajeVacio: string) => {
     if (listaAnuncios.length === 0) {
       return (
@@ -102,6 +126,14 @@ export const Dashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header onNuevoAnuncio={handleNuevoAnuncio} />
+
+      {/* Cartel de Cotizaciones */}
+      <CartelCotizacion
+        cotizacion={cotizacion}
+        loading={loadingCotizaciones}
+        esAdmin={usuario?.rol === 'admin'}
+        onEditarCotizaciones={handleEditarCotizaciones}
+      />
       <div className="flex flex-col lg:flex-row">
         <div className={`transition-all duration-300 ${mostrarFiltros ? 'w-full lg:w-80' : 'w-0'} overflow-hidden`}>
           <div className="p-4 lg:p-6">
@@ -135,28 +167,106 @@ export const Dashboard = () => {
               </TabsContent>
 
               <TabsContent value="tareas">
-                <Tabs value={vistaTareas} onValueChange={setVistaTareas} className="w-full">
-                  <TabsList className="grid w-full grid-cols-1 sm:grid-cols-3 mb-6 gap-2">
-                    <TabsTrigger value="pendientes" className="flex items-center justify-center space-x-2">
-                      <Clock className="h-5 w-5" />
-                      <span>Pendientes</span>
-                      <span className="bg-gray-200 text-gray-700 px-2 py-1 rounded-full text-xs font-medium">{datosFiltrados.tareas.pendientes.length}</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="enProceso" className="flex items-center justify-center space-x-2">
-                      <AlertTriangle className="h-5 w-5" />
-                      <span>En Proceso</span>
-                      <span className="bg-blue-200 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">{datosFiltrados.tareas.enProceso.length}</span>
-                    </TabsTrigger>
-                    <TabsTrigger value="completados" className="flex items-center justify-center space-x-2">
-                      <CheckCircle className="h-5 w-5" />
-                      <span>Completados</span>
-                      <span className="bg-green-200 text-green-700 px-2 py-1 rounded-full text-xs font-medium">{datosFiltrados.tareas.completados.length}</span>
-                    </TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="pendientes">{renderGridAnuncios(datosFiltrados.tareas.pendientes, 'No hay tareas pendientes')}</TabsContent>
-                  <TabsContent value="enProceso">{renderGridAnuncios(datosFiltrados.tareas.enProceso, 'No hay tareas en proceso')}</TabsContent>
-                  <TabsContent value="completados">{renderGridAnuncios(datosFiltrados.tareas.completados, 'No hay tareas completadas')}</TabsContent>
-                </Tabs>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  {/* Columna Pendientes */}
+                  <div className="bg-white rounded-lg border shadow-sm">
+                    <div className="p-4 border-b bg-gray-50 rounded-t-lg">
+                      <div className="flex items-center space-x-2">
+                        <Clock className="h-5 w-5 text-orange-500" />
+                        <h3 className="font-semibold text-gray-900">Pendientes</h3>
+                        <span className="bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-medium">
+                          {datosFiltrados.tareas.pendientes.length}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-4 space-y-4 min-h-[400px]">
+                      {datosFiltrados.tareas.pendientes.length === 0 ? (
+                        <div className="text-center py-8">
+                          <Clock className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                          <p className="text-gray-500 text-sm">No hay tareas pendientes</p>
+                        </div>
+                      ) : (
+                        datosFiltrados.tareas.pendientes.map((anuncio) => (
+                          <AnuncioCard
+                            key={anuncio.id}
+                            anuncio={anuncio}
+                            onVerDetalle={handleVerDetalle}
+                            onCambiarEstado={handleCambiarEstado}
+                            onEditar={handleEditarAnuncio}
+                            onEliminar={handleEliminarAnuncio}
+                            onAgregarComentario={handleAgregarComentario}
+                          />
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Columna En Proceso */}
+                  <div className="bg-white rounded-lg border shadow-sm">
+                    <div className="p-4 border-b bg-blue-50 rounded-t-lg">
+                      <div className="flex items-center space-x-2">
+                        <AlertTriangle className="h-5 w-5 text-blue-500" />
+                        <h3 className="font-semibold text-gray-900">En Proceso</h3>
+                        <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium">
+                          {datosFiltrados.tareas.enProceso.length}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-4 space-y-4 min-h-[400px]">
+                      {datosFiltrados.tareas.enProceso.length === 0 ? (
+                        <div className="text-center py-8">
+                          <AlertTriangle className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                          <p className="text-gray-500 text-sm">No hay tareas en proceso</p>
+                        </div>
+                      ) : (
+                        datosFiltrados.tareas.enProceso.map((anuncio) => (
+                          <AnuncioCard
+                            key={anuncio.id}
+                            anuncio={anuncio}
+                            onVerDetalle={handleVerDetalle}
+                            onCambiarEstado={handleCambiarEstado}
+                            onEditar={handleEditarAnuncio}
+                            onEliminar={handleEliminarAnuncio}
+                            onAgregarComentario={handleAgregarComentario}
+                          />
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Columna Completados */}
+                  <div className="bg-white rounded-lg border shadow-sm">
+                    <div className="p-4 border-b bg-green-50 rounded-t-lg">
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                        <h3 className="font-semibold text-gray-900">Completados</h3>
+                        <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
+                          {datosFiltrados.tareas.completados.length}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-4 space-y-4 min-h-[400px]">
+                      {datosFiltrados.tareas.completados.length === 0 ? (
+                        <div className="text-center py-8">
+                          <CheckCircle className="h-12 w-12 mx-auto text-gray-300 mb-2" />
+                          <p className="text-gray-500 text-sm">No hay tareas completadas</p>
+                        </div>
+                      ) : (
+                        datosFiltrados.tareas.completados.map((anuncio) => (
+                          <AnuncioCard
+                            key={anuncio.id}
+                            anuncio={anuncio}
+                            onVerDetalle={handleVerDetalle}
+                            onCambiarEstado={handleCambiarEstado}
+                            onEditar={handleEditarAnuncio}
+                            onEliminar={handleEliminarAnuncio}
+                            onAgregarComentario={handleAgregarComentario}
+                          />
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
               </TabsContent>
             </Tabs>
           </div>
@@ -170,6 +280,17 @@ export const Dashboard = () => {
       <DetalleAnuncio anuncio={anuncioSeleccionado} abierto={modalDetalle} onCerrar={() => setModalDetalle(false)} onAgregarComentario={handleAgregarComentarioAction} />
       <ComentarioModal anuncio={anuncioSeleccionado} abierto={modalComentario} onCerrar={() => setModalComentario(false)} onAgregarComentario={handleAgregarComentarioAction} />
       <ConfirmacionModal abierto={modalConfirmacion} onCerrar={() => setModalConfirmacion(false)} onConfirmar={handleConfirmarEliminacion} titulo="Eliminar Anuncio" descripcion="¿Está seguro de que desea eliminar este anuncio? Esta acción no se puede deshacer." tipo="danger" />
+
+      {/* Modal de Cotizaciones */}
+      {usuario?.rol === 'admin' && (
+        <ModalCotizaciones
+          abierto={modalCotizaciones}
+          onCerrar={() => setModalCotizaciones(false)}
+          onGuardar={handleGuardarCotizaciones}
+          cotizacionActual={cotizacion}
+          nombreUsuario={usuario.nombre}
+        />
+      )}
     </div>
   );
 };

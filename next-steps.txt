@@ -25,7 +25,21 @@
 - ✅ **Mapeo de datos**: Prisma → formato frontend
 - ✅ **Frontend migrado**: useAnuncios.ts usa API en lugar de Prisma directo
 
-### 4. **Archivos Clave Actualizados**
+### 4. **BUG CRÍTICO RESUELTO - Creación de Anuncios (Error 400)**
+- ✅ **Problema identificado**: Error 400 al crear anuncios desde el frontend
+- ✅ **Causa raíz**: 
+  - Backend esperaba campo `prioridad` siempre presente
+  - Frontend no enviaba `prioridad` para anuncios tipo "pizarra"
+  - Relaciones Prisma mal configuradas (conectando por `nombre` en lugar de `id`)
+- ✅ **Soluciones implementadas**:
+  - **Backend** (`anunciosController.ts:63-80`): Validación condicional de prioridad solo para tareas
+  - **Backend** (`anunciosController.ts:100`): Prioridad por defecto 'media' para pizarras
+  - **Frontend** (`FormularioAnuncio.tsx:98`): Envía prioridad 'media' por defecto para pizarras
+  - **Backend** (`anunciosController.ts:78-92`): Búsqueda correcta de usuario por nombre → ID
+  - **Logging mejorado**: Detalles específicos de campos faltantes y errores
+- ✅ **Resultado**: Creación de anuncios funcionando correctamente para ambos tipos (tarea/pizarra)
+
+### 5. **Archivos Clave Actualizados**
 ```
 backend/
 ├── src/
@@ -45,7 +59,8 @@ backend/
 
 src/ (frontend)
 ├── contexts/AuthContext.tsx      ✅ Usa backend API
-├── hooks/useAnuncios.ts          ✅ Migrado a API
+├── hooks/useAnuncios.ts          ✅ Migrado a API + logging mejorado
+├── components/FormularioAnuncio.tsx  ✅ Fix prioridad pizarras
 └── components/LoginForm.tsx      ✅ Integrado
 ```
 
@@ -139,4 +154,4 @@ Sistema completo de comunicación interna para estación de servicio con:
 - Autenticación segura
 - **Preparado para app móvil** (API lista para consumo móvil)
 
-**Estado actual: ~75% completado** - Backend + Frontend + DB funcionando, faltan refinamientos y funcionalidades avanzadas.
+**Estado actual: ~80% completado** - Backend + Frontend + DB funcionando completamente, bug crítico de creación resuelto, faltan refinamientos y funcionalidades avanzadas.

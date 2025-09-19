@@ -94,6 +94,8 @@ export const FormularioAnuncio = ({
       tipo,
       sectores: sectoresSeleccionados,
       creadoPor: usuario?.nombre || 'Usuario Desconocido',
+      // Para pizarras, usar prioridad media por defecto
+      prioridad: tipo === 'tarea' ? formData.prioridad : 'media',
     };
 
     try {

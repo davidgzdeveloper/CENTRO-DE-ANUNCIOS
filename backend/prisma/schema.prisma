@@ -11,12 +11,13 @@ datasource db {
 }
 
 model Usuario {
-  id          String      @id @default(cuid())
-  nombre      String      @unique
-  password    String
-  rol         Rol
-  anuncios    Anuncio[]   @relation("CreadoPor")
-  comentarios Comentario[] @relation("Autor")
+  id                  String       @id @default(cuid())
+  nombre              String       @unique
+  password            String
+  rol                 Rol
+  anuncios            Anuncio[]    @relation("CreadoPor")
+  comentarios         Comentario[] @relation("Autor")
+  cotizacionesActualizadas Cotizacion[] @relation("ActualizadoPor")
 }
 
 model Anuncio {
@@ -42,6 +43,16 @@ model Comentario {
   fecha     DateTime @default(now())
   anuncio   Anuncio  @relation(fields: [anuncioId], references: [id])
   anuncioId String
+}
+
+model Cotizacion {
+  id                String   @id @default(cuid())
+  dolar             Float
+  dolarViejo        Float
+  real              Float
+  fechaActualizacion DateTime @default(now()) @updatedAt
+  actualizadoPor    Usuario  @relation("ActualizadoPor", fields: [actualizadoPorId], references: [id])
+  actualizadoPorId  String
 }
 
 enum Rol {

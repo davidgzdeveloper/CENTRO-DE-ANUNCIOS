@@ -46,6 +46,7 @@ export const useAnuncios = () => {
   // Crear anuncio usando la API
   const crearAnuncio = useCallback(async (nuevoAnuncioData: Omit<Anuncio, 'id' | 'fechaCreacion' | 'fechaModificacion' | 'comentarios'>) => {
     try {
+      console.log('📤 Enviando datos del anuncio:', nuevoAnuncioData);
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/anuncios`, {
         method: 'POST',
@@ -59,15 +60,23 @@ export const useAnuncios = () => {
       if (response.ok) {
         await fetchAnuncios();
       } else {
-        console.error('Error al crear anuncio:', response.status);
+        const errorData = await response.text();
+        console.error('Error al crear anuncio:', response.status, errorData);
       }
     } catch (error) {
       console.error('Error al crear anuncio:', error);
     }
   }, [fetchAnuncios]);
 
-  // Actualizar anuncio usando la API
+  // Actualizar anuncio usando la API con actualización optimista
   const actualizarAnuncio = useCallback(async (id: string, cambios: Partial<Anuncio>) => {
+    // Actualización optimista - actualizar inmediatamente en la UI
+    setAnuncios(prev => prev.map(anuncio =>
+      anuncio.id === id
+        ? { ...anuncio, ...cambios, fechaModificacion: new Date() }
+        : anuncio
+    ));
+
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/anuncios/${id}`, {
@@ -79,13 +88,15 @@ export const useAnuncios = () => {
         body: JSON.stringify(cambios)
       });
 
-      if (response.ok) {
-        await fetchAnuncios();
-      } else {
+      if (!response.ok) {
         console.error('Error al actualizar anuncio:', response.status);
+        // Si falla, revertir los cambios recargando desde el servidor
+        await fetchAnuncios();
       }
     } catch (error) {
       console.error('Error al actualizar anuncio:', error);
+      // Si falla, revertir los cambios recargando desde el servidor
+      await fetchAnuncios();
     }
   }, [fetchAnuncios]);
 
@@ -94,8 +105,22 @@ export const useAnuncios = () => {
     await actualizarAnuncio(id, { estado: nuevoEstado });
   }, [actualizarAnuncio]);
 
-  // Agregar comentario usando la API
+  // Agregar comentario usando la API con actualización optimista
   const agregarComentario = useCallback(async (idAnuncio: string, texto: string, autor: string) => {
+    // Actualización optimista - agregar comentario inmediatamente en la UI
+    const nuevoComentario = {
+      id: `temp-${Date.now()}`,
+      texto,
+      autor,
+      fecha: new Date()
+    };
+
+    setAnuncios(prev => prev.map(anuncio =>
+      anuncio.id === idAnuncio
+        ? { ...anuncio, comentarios: [...anuncio.comentarios, nuevoComentario] }
+        : anuncio
+    ));
+
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/anuncios/${idAnuncio}/comentarios`, {
@@ -108,17 +133,36 @@ export const useAnuncios = () => {
       });
 
       if (response.ok) {
+        // Refrescar solo para obtener el ID real del comentario desde el servidor
         await fetchAnuncios();
       } else {
         console.error('Error al agregar comentario:', response.status);
+        // Si falla, revertir el comentario temporal
+        setAnuncios(prev => prev.map(anuncio =>
+          anuncio.id === idAnuncio
+            ? { ...anuncio, comentarios: anuncio.comentarios.filter(c => c.id !== nuevoComentario.id) }
+            : anuncio
+        ));
       }
     } catch (error) {
       console.error('Error al agregar comentario:', error);
+      // Si falla, revertir el comentario temporal
+      setAnuncios(prev => prev.map(anuncio =>
+        anuncio.id === idAnuncio
+          ? { ...anuncio, comentarios: anuncio.comentarios.filter(c => c.id !== nuevoComentario.id) }
+          : anuncio
+      ));
     }
   }, [fetchAnuncios]);
 
-  // Eliminar anuncio usando la API
+  // Eliminar anuncio usando la API con actualización optimista
   const eliminarAnuncio = useCallback(async (id: string) => {
+    // Guardar el anuncio por si necesitamos revertir
+    const anuncioEliminado = anuncios.find(a => a.id === id);
+
+    // Actualización optimista - eliminar inmediatamente de la UI
+    setAnuncios(prev => prev.filter(anuncio => anuncio.id !== id));
+
     try {
       const token = localStorage.getItem('auth_token');
       const response = await fetch(`${import.meta.env.VITE_API_URL}/api/anuncios/${id}`, {
@@ -129,15 +173,21 @@ export const useAnuncios = () => {
         }
       });
 
-      if (response.ok) {
-        await fetchAnuncios();
-      } else {
+      if (!response.ok) {
         console.error('Error al eliminar anuncio:', response.status);
+        // Si falla, restaurar el anuncio
+        if (anuncioEliminado) {
+          setAnuncios(prev => [...prev, anuncioEliminado].sort((a, b) => b.fechaCreacion.getTime() - a.fechaCreacion.getTime()));
+        }
       }
     } catch (error) {
       console.error('Error al eliminar anuncio:', error);
+      // Si falla, restaurar el anuncio
+      if (anuncioEliminado) {
+        setAnuncios(prev => [...prev, anuncioEliminado].sort((a, b) => b.fechaCreacion.getTime() - a.fechaCreacion.getTime()));
+      }
     }
-  }, [fetchAnuncios]);
+  }, [anuncios]);
 
   // Filtrar anuncios (en memoria, después de obtenerlos de la BD)
   const filtrarAnuncios = useCallback((filtros: FiltrosAnuncio) => {

@@ -1,5 +1,20 @@
 # 📋 Backlog de Desarrollo - Sistema de Monitoreo de Anuncios
 
+## 💱 Cotizaciones de Monedas
+> **Información actualizada de tasas de cambio para referencia general**
+
+### Dólar Estadounidense (USD)
+- **Compra:** $XXX.XX ARS
+- **Venta:** $XXX.XX ARS
+- **Última actualización:** [Fecha/Hora]
+
+### Real Brasileño (BRL)
+- **Compra:** $XXX.XX ARS
+- **Venta:** $XXX.XX ARS
+- **Última actualización:** [Fecha/Hora]
+
+---
+
 ## 🎯 Estado Actual del Proyecto
 
 **✅ Completado:**

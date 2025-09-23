@@ -10,6 +10,7 @@ export interface LoginResponse {
     id: string;
     nombre: string;
     rol: string;
+    sector?: string;
   };
   message?: string;
 }
@@ -19,5 +20,6 @@ export interface AuthenticatedRequest extends Request {
     id: string;
     nombre: string;
     rol: string;
+    sector?: string;
   };
 }

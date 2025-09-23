@@ -96,11 +96,18 @@
 
 **Estimación:** 3-4 días
 
+#### 9. Rediseñar la visualización de anuncios
+- [ ] Modificar el componente `AnuncioCard.tsx` para que se asemeje al estilo de una biografía de red social (ej. Facebook, X).
+- [ ] Priorizar un diseño más amigable y menos estructurado que una "card".
+- [ ] Asegurar que la nueva vista muestre la información clave del anuncio de forma clara.
+
+**Archivos afectados:** `src/components/AnuncioCard.tsx`, `src/pages/Dashboard.tsx`
+
 ---
 
 ### ⚡ Prioridad Baja (Funcionalidades Avanzadas)
 
-#### 9. Implementar sistema de archivos adjuntos
+#### 10. Implementar sistema de archivos adjuntos
 - [ ] Subida de imágenes/documentos en anuncios
 - [ ] Almacenamiento en cloud (Supabase Storage)
 - [ ] Previsualización de archivos
@@ -108,7 +115,7 @@
 
 **Estimación:** 3-4 días
 
-#### 10. Agregar funcionalidad de búsqueda avanzada
+#### 11. Agregar funcionalidad de búsqueda avanzada
 - [ ] Filtros combinados avanzados
 - [ ] Búsqueda por contenido de comentarios
 - [ ] Historial de búsquedas
@@ -116,7 +123,7 @@
 
 **Estimación:** 2-3 días
 
-#### 11. Implementar sistema de backup y exportación
+#### 12. Implementar sistema de backup y exportación
 - [ ] Exportación de datos a Excel/PDF
 - [ ] Backup automático de base de datos
 - [ ] Importación masiva de datos
@@ -128,7 +135,7 @@
 
 ### 🔧 Tareas de Infraestructura
 
-#### 12. Optimizar rendimiento y agregar caching
+#### 13. Optimizar rendimiento y agregar caching
 - [ ] Configurar React Query para cache de datos
 - [ ] Implementar paginación de anuncios
 - [ ] Lazy loading de componentes
@@ -136,7 +143,7 @@
 
 **Estimación:** 2-3 días
 
-#### 13. Implementar tests automatizados
+#### 14. Implementar tests automatizados
 - [ ] Configurar Vitest para tests unitarios
 - [ ] Tests de integración para hooks
 - [ ] Tests E2E con Playwright
@@ -144,7 +151,7 @@
 
 **Estimación:** 4-5 días
 
-#### 14. Configurar deployment y CI/CD
+#### 15. Configurar deployment y CI/CD
 - [ ] Deployment en Vercel/Netlify
 - [ ] GitHub Actions para CI/CD
 - [ ] Variables de entorno de producción

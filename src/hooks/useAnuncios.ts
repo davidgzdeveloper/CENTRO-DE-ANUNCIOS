@@ -196,9 +196,11 @@ export const useAnuncios = () => {
     let sectoresVisiblesPorUsuario: string[];
     if (usuario.rol === 'admin') {
       sectoresVisiblesPorUsuario = ['Playa', 'Tienda', 'Depósito', 'Mantenimiento'];
+    } else if (usuario.sector) {
+      sectoresVisiblesPorUsuario = [usuario.sector];
     } else {
-      const sectorDelUsuario = usuario.nombre.charAt(0).toUpperCase() + usuario.nombre.slice(1);
-      sectoresVisiblesPorUsuario = [sectorDelUsuario];
+      // Fallback for users without a sector, although this should not happen with the new changes
+      sectoresVisiblesPorUsuario = [];
     }
 
     return anuncios.filter(anuncio => {

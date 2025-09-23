@@ -15,6 +15,7 @@ model Usuario {
   nombre              String       @unique
   password            String
   rol                 Rol
+  sector              String?
   anuncios            Anuncio[]    @relation("CreadoPor")
   comentarios         Comentario[] @relation("Autor")
   cotizacionesActualizadas Cotizacion[] @relation("ActualizadoPor")

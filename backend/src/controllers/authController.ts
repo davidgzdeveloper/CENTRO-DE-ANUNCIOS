@@ -69,7 +69,8 @@ export const login = async (req: Request<{}, LoginResponse, LoginRequest>, res: 
       usuario: {
         id: usuario.id,
         nombre: usuario.nombre,
-        rol: usuario.rol
+        rol: usuario.rol,
+        sector: usuario.sector ?? undefined
       }
     });
 
@@ -112,7 +113,8 @@ export const verifyToken = async (req: Request, res: Response) => {
       usuario: {
         id: usuario.id,
         nombre: usuario.nombre,
-        rol: usuario.rol
+        rol: usuario.rol,
+        sector: usuario.sector ?? undefined
       }
     });
 

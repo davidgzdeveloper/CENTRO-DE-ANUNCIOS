@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Header } from '@/components/Header';
 import { FiltrosSidebar } from '@/components/FiltrosSidebar';
 import { AnuncioCard } from '@/components/AnuncioCard';
+import { AnuncioTareaCard } from '@/components/AnuncioTareaCard';
 import { FormularioAnuncio } from '@/components/FormularioAnuncio';
 import { DetalleAnuncio } from '@/components/DetalleAnuncio';
 import { ComentarioModal } from '@/components/ComentarioModal';
@@ -104,7 +105,7 @@ export const Dashboard = () => {
     }
   };
 
-  const renderGridAnuncios = (listaAnuncios: Anuncio[], mensajeVacio: string) => {
+  const renderPizarraAnuncios = (listaAnuncios: Anuncio[], mensajeVacio: string) => {
     if (listaAnuncios.length === 0) {
       return (
         <div className="text-center py-12">
@@ -115,7 +116,7 @@ export const Dashboard = () => {
       );
     }
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
+      <div className="bg-white border rounded-lg">
         {listaAnuncios.map((anuncio) => (
           <AnuncioCard key={anuncio.id} anuncio={anuncio} onVerDetalle={handleVerDetalle} onCambiarEstado={handleCambiarEstado} onEditar={handleEditarAnuncio} onEliminar={handleEliminarAnuncio} onAgregarComentario={handleAgregarComentario} />
         ))}
@@ -163,7 +164,7 @@ export const Dashboard = () => {
               </TabsList>
 
               <TabsContent value="pizarra">
-                {renderGridAnuncios(datosFiltrados.pizarra, 'No hay anuncios en la pizarra')}
+                {renderPizarraAnuncios(datosFiltrados.pizarra, 'No hay anuncios en la pizarra')}
               </TabsContent>
 
               <TabsContent value="tareas">
@@ -187,7 +188,7 @@ export const Dashboard = () => {
                         </div>
                       ) : (
                         datosFiltrados.tareas.pendientes.map((anuncio) => (
-                          <AnuncioCard
+                          <AnuncioTareaCard
                             key={anuncio.id}
                             anuncio={anuncio}
                             onVerDetalle={handleVerDetalle}
@@ -220,7 +221,7 @@ export const Dashboard = () => {
                         </div>
                       ) : (
                         datosFiltrados.tareas.enProceso.map((anuncio) => (
-                          <AnuncioCard
+                          <AnuncioTareaCard
                             key={anuncio.id}
                             anuncio={anuncio}
                             onVerDetalle={handleVerDetalle}
@@ -253,7 +254,7 @@ export const Dashboard = () => {
                         </div>
                       ) : (
                         datosFiltrados.tareas.completados.map((anuncio) => (
-                          <AnuncioCard
+                          <AnuncioTareaCard
                             key={anuncio.id}
                             anuncio={anuncio}
                             onVerDetalle={handleVerDetalle}

@@ -3,6 +3,7 @@ export interface Usuario {
   id: string;
   nombre: string;
   rol: 'admin' | 'empleado' | 'visualizador';
+  sector?: string;
 }
 
 export interface Comentario {

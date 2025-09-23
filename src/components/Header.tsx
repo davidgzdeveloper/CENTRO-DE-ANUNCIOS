@@ -1,6 +1,6 @@
 
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Bell, Plus, User, LogOut } from 'lucide-react';
@@ -10,6 +10,34 @@ import { useAnuncios } from '@/hooks/useAnuncios';
 interface HeaderProps {
   onNuevoAnuncio: () => void;
 }
+
+const Clock = () => {
+  const [date, setDate] = useState(new Date());
+
+  useEffect(() => {
+    const timerId = setInterval(() => setDate(new Date()), 1000);
+    return () => clearInterval(timerId);
+  }, []);
+
+  const formatTime = (date: Date) => {
+    const days = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    const dayOfWeek = days[date.getDay()];
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+
+    return `${dayOfWeek}, ${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
+  };
+
+  return (
+    <div className="text-base text-gray-600 font-medium">
+      {formatTime(date)}
+    </div>
+  );
+};
 
 export const Header = ({ onNuevoAnuncio }: HeaderProps) => {
   const { usuario, logout } = useAuth();
@@ -52,6 +80,8 @@ export const Header = ({ onNuevoAnuncio }: HeaderProps) => {
             </div>
           )}
         </div>
+
+        <Clock />
 
         <div className="flex items-center space-x-4">
           {usuario && (usuario.rol === 'admin' || usuario.rol === 'empleado') && (

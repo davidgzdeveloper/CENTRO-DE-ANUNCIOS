@@ -117,7 +117,7 @@ export const DetalleAnuncio = ({ anuncio, abierto, onCerrar, onAgregarComentario
                   {prioridadConfig.texto}
                 </Badge>
                 <Badge variant="outline" className="px-3 py-1">
-                  {anuncio.sector}
+                  {anuncio.sectores}
                 </Badge>
               </div>
             </div>

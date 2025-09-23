@@ -55,7 +55,8 @@ export const AnuncioCard = ({
   const puedeEditar = usuario?.rol === 'admin' || (usuario?.rol === 'empleado' && anuncio.creadoPor === usuario.nombre);
   const puedeEliminar = usuario?.rol === 'admin';
   const puedeCambiarEstado = (usuario?.rol === 'admin' || usuario?.rol === 'empleado') && esTarea;
-  const puedeComentar = usuario?.rol === 'admin' || usuario?.rol === 'empleado';
+  const puedeComentar = usuario?.rol === 'admin' || 
+                     (usuario?.rol === 'empleado' && usuario.sector && anuncio.sectores.includes(usuario.sector));
 
   const getProximoEstado = (estadoActual: Anuncio['estado']): Anuncio['estado'] | null => {
     if (!esTarea) return null;

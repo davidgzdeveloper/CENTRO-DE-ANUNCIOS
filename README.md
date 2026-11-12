@@ -1,73 +1,134 @@
-# Welcome to your Lovable project
+# Centro de Anuncios
 
-## Project info
+Aplicación web full-stack de comunicación interna para una estación de servicio. Centraliza los anuncios, tareas y novedades de cada sector (playa, tienda, depósito, mantenimiento) en un único panel, con control de acceso por roles y seguimiento del estado de cada tarea.
 
-**URL**: https://lovable.dev/projects/cccc7904-f219-4cc8-bbf7-d1745f9cd22e
+## Funcionalidades
 
-## How can I edit this code?
+- **Autenticación con JWT**: inicio de sesión con contraseñas cifradas con bcrypt y verificación de sesión.
+- **Roles de usuario**: `admin`, `empleado` y `visualizador`, con permisos distintos sobre los anuncios.
+- **Dos tipos de anuncio**:
+  - **Tareas**: con prioridad (alta, media, baja) y estado (pendiente, en proceso, completado).
+  - **Pizarra**: avisos informativos de carácter general.
+- **Segmentación por sectores**: cada anuncio puede dirigirse a uno o varios sectores.
+- **Comentarios** en cada anuncio para el seguimiento entre equipos.
+- **Filtros** por tipo, sector, prioridad y estado.
+- **Cotizaciones de divisas** (dólar y real) con historial de actualizaciones.
+- **Reloj en tiempo real** en el encabezado del panel.
+- **Interfaz adaptable** a escritorio y dispositivos móviles.
 
-There are several ways of editing your application.
+## Tecnologías
 
-**Use Lovable**
+| Capa | Stack |
+| --- | --- |
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, shadcn/ui (Radix UI), React Router, TanStack Query, React Hook Form, Zod |
+| Backend | Node.js, Express 5, TypeScript, JSON Web Tokens, bcrypt |
+| Base de datos | PostgreSQL (Supabase), Prisma ORM |
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/cccc7904-f219-4cc8-bbf7-d1745f9cd22e) and start prompting.
+## Arquitectura
 
-Changes made via Lovable will be committed automatically to this repo.
+```
+├── src/                  # Frontend (React + Vite)
+│   ├── components/       # Componentes de la interfaz
+│   ├── contexts/         # AuthContext: estado de sesión
+│   ├── hooks/            # useAnuncios, useCotizaciones
+│   ├── pages/            # Index, Dashboard, NotFound
+│   └── types/            # Tipos compartidos
+├── backend/              # API REST (Express + TypeScript)
+│   ├── src/
+│   │   ├── controllers/  # Lógica de negocio
+│   │   ├── routes/       # Definición de endpoints
+│   │   ├── app.ts        # Configuración de Express
+│   │   └── server.ts     # Punto de entrada
+│   └── prisma/           # Esquema, migraciones y datos iniciales
+└── prisma/               # Esquema de Prisma del frontend
+```
 
-**Use your preferred IDE**
+El frontend consume la API REST del backend, que gestiona la autenticación y el acceso a PostgreSQL a través de Prisma.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Modelo de datos
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Usuario**: nombre, contraseña (hash) y rol.
+- **Anuncio**: tipo, título, descripción, sectores, prioridad, estado, autor y fechas.
+- **Comentario**: texto, autor, fecha y anuncio asociado.
 
-Follow these steps:
+## API REST
+
+| Método | Endpoint | Descripción |
+| --- | --- | --- |
+| `POST` | `/api/auth/login` | Inicia sesión y devuelve un token JWT |
+| `GET` | `/api/auth/verify` | Verifica un token |
+| `GET` | `/api/anuncios` | Lista los anuncios |
+| `POST` | `/api/anuncios` | Crea un anuncio |
+| `PUT` | `/api/anuncios/:id` | Actualiza un anuncio |
+| `DELETE` | `/api/anuncios/:id` | Elimina un anuncio |
+| `POST` | `/api/anuncios/:id/comentarios` | Agrega un comentario |
+| `GET` | `/api/cotizaciones` | Devuelve la cotización vigente |
+| `POST` | `/api/cotizaciones` | Actualiza las cotizaciones |
+| `GET` | `/api/cotizaciones/historial` | Historial de cotizaciones |
+| `GET` | `/api/health` | Estado del servidor |
+
+## Instalación y ejecución local
+
+### Requisitos
+
+- Node.js 18 o superior
+- Una base de datos PostgreSQL (local o en Supabase)
+
+### 1. Clonar el repositorio
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone https://github.com/davidgzdeveloper/CENTRO-DE-ANUNCIOS.git
+cd CENTRO-DE-ANUNCIOS
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 2. Configurar las variables de entorno
 
-# Step 3: Install the necessary dependencies.
-npm i
+`backend/.env`:
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```env
+DATABASE_URL="postgresql://usuario:password@host:5432/base_de_datos"
+JWT_SECRET="una_clave_secreta"
+PORT=3001
+FRONTEND_URL="http://localhost:8080"
+```
+
+`.env` (raíz del proyecto):
+
+```env
+VITE_API_URL="http://localhost:3001"
+```
+
+### 3. Levantar el backend
+
+```sh
+cd backend
+npm install
+npx prisma migrate dev
+npm run seed
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+La API queda disponible en `http://localhost:3001`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### 4. Levantar el frontend
 
-**Use GitHub Codespaces**
+En otra terminal, desde la raíz del proyecto:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```sh
+npm install
+npm run dev
+```
 
-## What technologies are used for this project?
+La aplicación queda disponible en `http://localhost:8080`. El comando `seed` crea usuarios de prueba para cada rol y sector.
 
-This project is built with:
+## Próximas mejoras
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- Middleware de autorización por rol en todas las rutas protegidas.
+- Validación de datos con Zod en el backend.
+- Notificaciones en tiempo real con WebSockets.
+- Panel de métricas por sector.
+- Tests automatizados y CI/CD con GitHub Actions.
 
-## How can I deploy this project?
+## Autor
 
-Simply open [Lovable](https://lovable.dev/projects/cccc7904-f219-4cc8-bbf7-d1745f9cd22e) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+Desarrollado por [@davidgzdeveloper](https://github.com/davidgzdeveloper).

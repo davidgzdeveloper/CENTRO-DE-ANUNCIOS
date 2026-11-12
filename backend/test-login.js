@@ -19,7 +19,7 @@ async function testLogin() {
     
     console.log('✅ Usuario encontrado:', usuario.nombre);
     
-    const esValida = await bcrypt.compare('admin123', usuario.password);
+    const esValida = await bcrypt.compare(process.env.SEED_PASSWORD_ADMIN || '', usuario.password);
     console.log('✅ Password válida:', esValida);
     
   } catch (error) {

@@ -90,6 +90,13 @@ DATABASE_URL="postgresql://usuario:password@host:5432/base_de_datos"
 JWT_SECRET="una_clave_secreta"
 PORT=3001
 FRONTEND_URL="http://localhost:8080"
+
+# Contraseñas de los usuarios de prueba que crea `npm run seed`
+SEED_PASSWORD_ADMIN="..."
+SEED_PASSWORD_PLAYA="..."
+SEED_PASSWORD_TIENDA="..."
+SEED_PASSWORD_DEPOSITO="..."
+SEED_PASSWORD_MANTENIMIENTO="..."
 ```
 
 `.env` (raíz del proyecto):

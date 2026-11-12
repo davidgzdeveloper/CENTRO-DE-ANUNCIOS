@@ -3,12 +3,23 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+// Las contraseñas se leen de variables de entorno (SEED_PASSWORD_<USUARIO>),
+// nunca se escriben en el código.
+function passwordDe(usuario: string): string {
+  const variable = `SEED_PASSWORD_${usuario.toUpperCase()}`;
+  const valor = process.env[variable];
+  if (!valor) {
+    throw new Error(`Falta la variable de entorno ${variable}`);
+  }
+  return valor;
+}
+
 const USUARIOS_DEMO = [
-  { nombre: 'admin', rol: Rol.admin, password: 'admin123', sector: 'admin' },
-  { nombre: 'playa', rol: Rol.empleado, password: 'playa123', sector: 'Playa' },
-  { nombre: 'tienda', rol: Rol.empleado, password: 'tienda123', sector: 'Tienda' },
-  { nombre: 'deposito', rol: Rol.empleado, password: 'deposito123', sector: 'Depósito' },
-  { nombre: 'mantenimiento', rol: Rol.empleado, password: 'mantenimiento123', sector: 'Mantenimiento' },
+  { nombre: 'admin', rol: Rol.admin, password: passwordDe('admin'), sector: 'admin' },
+  { nombre: 'playa', rol: Rol.empleado, password: passwordDe('playa'), sector: 'Playa' },
+  { nombre: 'tienda', rol: Rol.empleado, password: passwordDe('tienda'), sector: 'Tienda' },
+  { nombre: 'deposito', rol: Rol.empleado, password: passwordDe('deposito'), sector: 'Depósito' },
+  { nombre: 'mantenimiento', rol: Rol.empleado, password: passwordDe('mantenimiento'), sector: 'Mantenimiento' },
 ];
 
 async function main() {

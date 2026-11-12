@@ -2,12 +2,22 @@
 
 Aplicación web full-stack de comunicación interna para una estación de servicio. Centraliza los anuncios, tareas y novedades de cada sector (playa, tienda, depósito, mantenimiento) en un único panel, con control de acceso por roles y seguimiento del estado de cada tarea.
 
+## Capturas
+
+**Tablero de tareas** (vista de administrador): tareas organizadas por estado, con filtros, cotizaciones de divisas y contadores en el encabezado.
+
+![Tablero de tareas en la vista de administrador](docs/captura_vista_admins.jpg)
+
+**Pizarra**: avisos generales dirigidos a uno o varios sectores.
+
+![Pizarra de avisos por sector](docs/captura_pizarra.jpg)
+
 ## Funcionalidades
 
 - **Autenticación con JWT**: inicio de sesión con contraseñas cifradas con bcrypt y verificación de sesión.
 - **Roles de usuario**: `admin`, `empleado` y `visualizador`, con permisos distintos sobre los anuncios.
 - **Dos tipos de anuncio**:
-  - **Tareas**: con prioridad (alta, media, baja) y estado (pendiente, en proceso, completado).
+  - **Tareas**: con prioridad (alta, media, baja) y estado (pendiente, en proceso, completado), en un tablero de tres columnas.
   - **Pizarra**: avisos informativos de carácter general.
 - **Segmentación por sectores**: cada anuncio puede dirigirse a uno o varios sectores.
 - **Comentarios** en cada anuncio para el seguimiento entre equipos.
